@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-with-host-net
+spec:
+  hostNetwork: true
+  containers:
+  - name: nginx-with-host-net
+    image: nginx
+    
