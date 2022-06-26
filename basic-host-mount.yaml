@@ -1,25 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: debian
+  name: alpine-dind
 spec:
   selector:
     matchLabels:
-      run: debian
+      run: alpine-dind
   replicas: 1
   template:
     metadata:
       labels:
-        run: debian
+        run: alpine-dind
     spec:
       containers:
-      - name: debian
-        image: debian
-        command: [ "bin/bash", "-c", "--" ]
+      - name: alpine-dind
+        image: alpine-dind:1.0
+        command: [ "bin/ash", "-c", "--" ]
         args: [ "while true; do sleep 30; done;" ]
         volumeMounts:
         - mountPath: /host
           name: slash
+      imagePullSecrets:
+      - name: my-secret
+      serviceAccount: sa-test
       volumes:
         - hostPath:
             path: /
