@@ -1,0 +1,146 @@
+# settings file location: /usr/local/apache2/conf/httpd.conf
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: httpd-proxy-conf
+  namespace: intezer-protect
+data:
+  httpd.conf: |
+    ServerRoot "/usr/local/apache2"
+
+    Listen 8080
+
+    LoadModule mpm_event_module modules/mod_mpm_event.so
+    LoadModule watchdog_module modules/mod_watchdog.so
+    LoadModule reqtimeout_module modules/mod_reqtimeout.so
+    LoadModule filter_module modules/mod_filter.so
+    LoadModule log_config_module modules/mod_log_config.so
+    LoadModule env_module modules/mod_env.so
+    LoadModule headers_module modules/mod_headers.so
+    LoadModule setenvif_module modules/mod_setenvif.so
+    LoadModule version_module modules/mod_version.so
+    LoadModule proxy_module modules/mod_proxy.so
+    LoadModule proxy_connect_module modules/mod_proxy_connect.so
+    LoadModule proxy_http_module modules/mod_proxy_http.so
+    LoadModule proxy_wstunnel_module modules/mod_proxy_wstunnel.so    
+    LoadModule slotmem_shm_module modules/mod_slotmem_shm.so
+    LoadModule slotmem_plain_module modules/mod_slotmem_plain.so
+    LoadModule unixd_module modules/mod_unixd.so
+    LoadModule status_module modules/mod_status.so
+    LoadModule authz_core_module modules/mod_authz_core.so
+
+    <IfModule !mpm_prefork_module>
+    </IfModule>
+    <IfModule mpm_prefork_module>
+    </IfModule>
+
+    <IfModule unixd_module>
+    User httpd
+    Group httpd
+
+    </IfModule>
+
+    ServerAdmin admin@org.il
+    
+    ServerName localhost
+    
+    # stderr
+    #ErrorLog /proc/self/fd/2 
+    ErrorLog logs/err-main.log
+
+    LogLevel warn
+
+    <IfModule log_config_module>
+        LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+        LogFormat "%h %l %u %t \"%r\" %>s %b" common
+
+        <IfModule logio_module>
+          LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\" %I %O" combinedio
+        </IfModule>
+        
+        # stdout
+        #CustomLog /proc/self/fd/1 common 
+        CustomLog logs/main.log common
+
+    </IfModule>
+
+
+    <IfModule headers_module>
+        RequestHeader unset Proxy early
+    </IfModule>
+
+
+    <VirtualHost *:8080>
+      ProxyRequests On
+      ProxyVia On
+      
+      # stderr
+      #ErrorLog /proc/self/fd/2
+      ErrorLog logs/err-proxy.log
+      
+      # stdout
+      #CustomLog /proc/self/fd/1 combined
+      CustomLog logs/proxy.log common
+
+      ProxyRemote * http://192.168.1.1:80/
+    </VirtualHost>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpd-proxy
+  namespace: intezer-protect
+  labels:
+    app: httpd-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpd-proxy
+  template:
+    metadata:
+      labels:
+        app: httpd-proxy
+    spec:  
+      containers:
+      - name: httpd-proxy
+        image: httpd:2.4.46-alpine
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+          - name: httpd-config-file
+            mountPath: /usr/local/apache2/conf/httpd.conf
+            subPath: httpd.conf
+      volumes:
+      - name: httpd-config-file
+        configMap:
+          name: httpd-proxy-conf
+          items:
+          - key: httpd.conf
+            path: httpd.conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpd-proxy-clusterip
+  namespace: intezer-protect
+spec:
+  type: ClusterIP
+  selector:
+    app: httpd-proxy
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpd-proxy
+  namespace: intezer-protect
+spec:
+  type: ExternalName
+  externalName: intezer-protect.proxy.local
+  

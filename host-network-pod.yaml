@@ -6,5 +6,5 @@ spec:
   hostNetwork: true
   containers:
   - name: nginx-with-host-net
-    image: nginx
+    image: nginx-as-root:1.21.1
     
