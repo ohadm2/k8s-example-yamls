@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: a-privileged-pod
+spec:
+  containers:
+  - name: a-privileged-pod
+    image: ubuntu
+    command: [ "bin/bash", "-c", "--" ]
+    # args: [ "--mount=/host/proc/1/ns/mnt", "/bin/bash" ]
+    args: [ "while true; do sleep 30; done;" ]
+    securityContext:
+      allowPrivilegeEscalation: true
+      capabilities:
+        add:
+          - ALL
+      privileged: true
+    volumeMounts:
+      - mountPath: /host
+        name: host
+  volumes:
+  - hostPath:
+      path: /
+      type: ''
+    name: host
+  hostPID: true
+  restartPolicy: Never
