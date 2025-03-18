@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv
+spec:
+  capacity:
+    storage: 5Gi  # Matches the PVC request
+  accessModes:
+    - ReadWriteOnce  # Must match PVC's access mode
+  persistentVolumeReclaimPolicy: Retain  # Can be 'Delete' or 'Recycle'
+  storageClassName: standard  # Must match PVC
+  hostPath:
+    path: /mnt/data  # Path on the node where data is stored (for testing)
+

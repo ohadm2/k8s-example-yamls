@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce  # Can be ReadWriteMany based on your storage
+  resources:
+    requests:
+      storage: 5Gi  # Requesting 5GB of storage
+  storageClassName: standard  # Adjust based on your cluster
+
